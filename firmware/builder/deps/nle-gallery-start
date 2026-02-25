@@ -1,0 +1,133 @@
+#!/bin/sh
+# nle-gallery-start: Boot startup script for gallery with auto-recovery
+# Waits for network, ensures images exist, then starts gallery
+# If gallery exits, retries update and restarts
+# Freezes nlclient during download to prevent WiFi WoWLAN
+
+PHOTO_DIR="/media/scratch/nle-photos"
+GALLERY="/usr/bin/nle-gallery"
+UPDATER="/usr/bin/nle-gallery-update"
+STATUS="/usr/bin/nle-status"
+INPUT="/dev/input/event1"
+WAIT_NET=60
+WAIT_BOOT=30
+MANIFEST="/tmp/gallery-manifest.txt"
+FETCH="/usr/bin/nle-fetch"
+GALLERY_URL="http://nest-gallery.jasongraphix.com"
+
+# Wait for boot to settle
+sleep "$WAIT_BOOT"
+
+# Ensure scratch is mounted
+if ! mount | grep -q "/media/scratch"; then
+    mount -t jffs2 /dev/mtdblock14 /media/scratch 2>/dev/null
+fi
+mkdir -p "$PHOTO_DIR"
+
+# Count valid images (correct size only)
+count_images() {
+    n=0
+    for f in "$PHOTO_DIR"/*.raw; do
+        [ -f "$f" ] || continue
+        size=$(ls -l "$f" 2>/dev/null | awk '{print $5}')
+        [ "$size" = "409600" ] && n=$((n + 1))
+    done
+    echo "$n"
+}
+
+# Get expected count from manifest
+expected_count() {
+    $FETCH "$GALLERY_URL/gallery.txt" "$MANIFEST" 2>/dev/null
+    if [ -f "$MANIFEST" ] && [ -s "$MANIFEST" ]; then
+        wc -l < "$MANIFEST" | tr -d ' '
+    else
+        echo "0"
+    fi
+}
+
+# Wait for network
+wait_for_network() {
+    waited=0
+    while [ "$waited" -lt "$WAIT_NET" ]; do
+        if ip route 2>/dev/null | grep -q "default"; then
+            return 0
+        fi
+        sleep 5
+        waited=$((waited + 5))
+    done
+    return 1
+}
+
+# Freeze nlclient/nlheartbeatd to prevent WiFi sleep during download
+freeze_nest() {
+    HB_PID=$(pidof nlheartbeatd 2>/dev/null)
+    NLC_PID=$(pidof nlclient 2>/dev/null)
+    [ -n "$HB_PID" ] && kill -STOP $HB_PID 2>/dev/null
+    [ -n "$NLC_PID" ] && kill -STOP $NLC_PID 2>/dev/null
+    echo "nle-gallery-start: Froze nlclient (WiFi stays active)"
+}
+
+# Resume nlclient/nlheartbeatd
+unfreeze_nest() {
+    NLC_PID=$(pidof nlclient 2>/dev/null)
+    HB_PID=$(pidof nlheartbeatd 2>/dev/null)
+    [ -n "$NLC_PID" ] && kill -CONT $NLC_PID 2>/dev/null
+    [ -n "$HB_PID" ] && kill -CONT $HB_PID 2>/dev/null
+    echo "nle-gallery-start: Resumed nlclient"
+}
+
+while true; do
+    count=$(count_images)
+
+    # If too few images, do a full download before starting gallery
+    if [ "$count" -lt 1 ]; then
+        echo "nle-gallery-start: $count images found, need to download"
+        $STATUS "NLE Gallery" "Waiting for network..."
+        if wait_for_network; then
+            expected=$(expected_count)
+            echo "nle-gallery-start: Manifest has $expected images, downloading all..."
+            # Freeze nlclient so WiFi stays active during download
+            freeze_nest
+            $STATUS "NLE Gallery" "Downloading 0/$expected..."
+            # Keep retrying until we have them all
+            attempts=0
+            while [ "$count" -lt "$expected" ] && [ "$expected" -gt 0 ] && [ "$attempts" -lt 5 ]; do
+                "$UPDATER" 2>&1 | while read -r line; do
+                    echo "nle-gallery-start: $line"
+                done
+                count=$(count_images)
+                $STATUS "NLE Gallery" "Downloading $count/$expected..."
+                attempts=$((attempts + 1))
+                if [ "$count" -lt "$expected" ]; then
+                    echo "nle-gallery-start: $count/$expected images, retrying ($attempts/5)..."
+                    sleep 5
+                fi
+            done
+            echo "nle-gallery-start: Downloaded $count/$expected images"
+            # Don't unfreeze — gallery will take over the freeze
+        else
+            echo "nle-gallery-start: No network after ${WAIT_NET}s"
+        fi
+    fi
+
+    count=$(count_images)
+    if [ "$count" -gt 0 ]; then
+        # Don't start if another instance is already running
+        if pidof nle-gallery >/dev/null 2>&1; then
+            echo "nle-gallery-start: Gallery already running, waiting..."
+            sleep 10
+            continue
+        fi
+        echo "nle-gallery-start: Starting gallery with $count images"
+        $STATUS "NLE Gallery" "Starting gallery..."
+        "$GALLERY" --takeover "$PHOTO_DIR" "$INPUT"
+        # Gallery exited — unfreeze nest before retrying
+        unfreeze_nest
+        echo "nle-gallery-start: Gallery exited, retrying in 10s..."
+        sleep 10
+    else
+        echo "nle-gallery-start: No images available, retrying in 30s..."
+        unfreeze_nest
+        sleep 30
+    fi
+done

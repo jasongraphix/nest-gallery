@@ -22,6 +22,7 @@ RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y \
     libncurses5:i386 \
     rsync \
     file \
+    imagemagick \
     && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y \

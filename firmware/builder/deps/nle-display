@@ -1,0 +1,24 @@
+#!/bin/sh
+# Display a raw framebuffer image on Nest Gen 2 LCD
+# Freezes nlclient/nlheartbeatd, enables backlight, writes to both fb0 buffer pages
+
+IMAGE="${1:-/etc/nle-photos/test-image.raw}"
+
+if [ ! -f "$IMAGE" ]; then
+  exit 0
+fi
+
+# Freeze heartbeat monitor (prevents reboot when nlclient is unresponsive)
+HB_PID=$(ps -A | grep nlheartbeat | grep -v grep | head -1 | cut -c1-6)
+[ -n "$HB_PID" ] && kill -STOP $HB_PID
+
+# Freeze Nest UI (SIGSTOP, not kill — killing triggers reboot)
+NLC_PID=$(ps -A | grep nlclient | grep -v grep | head -1 | cut -c1-6)
+[ -n "$NLC_PID" ] && kill -STOP $NLC_PID
+
+# Wake display and set backlight
+echo 0 > /sys/class/graphics/fb0/blank
+echo 120 > /sys/class/backlight/3-0036/brightness
+
+# Write to both framebuffer pages (double-buffered 320x640)
+cat "$IMAGE" "$IMAGE" > /dev/fb0

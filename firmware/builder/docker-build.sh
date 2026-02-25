@@ -38,6 +38,7 @@ echo ""
 MSYS_NO_PATHCONV=1 $DOCKER_CMD run $DOCKER_FLAGS \
     -v "$(pwd):/work" \
     -v "$(cd ../.. && pwd)/server:/server" \
+    -v "$(cd ../.. && pwd)/nest-photos:/work/nest-photos" \
     -w /build \
     -e "PYTHONUNBUFFERED=1" \
     nest-firmware-builder \

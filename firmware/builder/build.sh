@@ -621,6 +621,33 @@ fi
 ROOTME_EOF
 
       cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
+cp /tmp/nleapi/nle-gallery /tmp/1/usr/bin/nle-gallery || true
+cp /tmp/nleapi/nle-fetch /tmp/1/usr/bin/nle-fetch || true
+cp /tmp/nleapi/nle-gallery-update /tmp/1/usr/bin/nle-gallery-update || true
+cp /tmp/nleapi/nle-gallery-start /tmp/1/usr/bin/nle-gallery-start || true
+cp /tmp/nleapi/nle-status /tmp/1/usr/bin/nle-status || true
+chmod +x /tmp/1/usr/bin/nle-gallery || true
+chmod +x /tmp/1/usr/bin/nle-fetch || true
+chmod +x /tmp/1/usr/bin/nle-gallery-update || true
+chmod +x /tmp/1/usr/bin/nle-gallery-start || true
+chmod +x /tmp/1/usr/bin/nle-status || true
+echo "nameserver 8.8.8.8" > /tmp/1/etc/resolv.conf || true
+rm -rf /tmp/1/etc/nle-photos || true
+# Copy gallery images to /media/scratch (mtdblock14) instead of rootfs
+mkdir -p /tmp/scratch || true
+mount -t jffs2 /dev/mtdblock14 /tmp/scratch || true
+mkdir -p /tmp/scratch/nle-photos || true
+for f in /tmp/nleapi/[0-9][0-9].raw; do
+  [ -f "$f" ] && cp "$f" /tmp/scratch/nle-photos/ || true
+done
+umount /tmp/scratch 2>/dev/null || true
+if ! grep -q "nle-gallery" /tmp/1/etc/init.d/rcS; then
+  echo '(/usr/bin/nle-gallery-start > /dev/null 2>&1) &' >> /tmp/1/etc/init.d/rcS
+fi
+
+ROOTME_EOF
+
+      cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
 umount /tmp/1 2>/dev/null || true
 reboot
 ROOTME_EOF
