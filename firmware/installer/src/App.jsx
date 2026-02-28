@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import WelcomeScreen from './components/WelcomeScreen';
 import SystemCheck from './components/SystemCheck';
 import GenerationSelect from './components/GenerationSelect';
+import GallerySetup from './components/GallerySetup';
 import InstallScreen from './components/InstallScreen';
 import SuccessScreen from './components/SuccessScreen';
 import ErrorScreen from './components/ErrorScreen';
@@ -10,6 +11,7 @@ const SCREENS = {
   WELCOME: 'welcome',
   SYSTEM_CHECK: 'system_check',
   GENERATION_SELECT: 'generation_select',
+  GALLERY_SETUP: 'gallery_setup',
   INSTALL: 'install',
   SUCCESS: 'success',
   ERROR: 'error',
@@ -20,6 +22,7 @@ function App() {
   const [systemInfo, setSystemInfo] = useState(null);
   const [generation, setGeneration] = useState(null);
   const [customFiles, setCustomFiles] = useState(null);
+  const [galleryConfig, setGalleryConfig] = useState(null);
   const [error, setError] = useState(null);
   const [platform, setPlatform] = useState(null);
 
@@ -83,9 +86,26 @@ function App() {
             onNext={(config) => {
               setGeneration(config.generation);
               setCustomFiles(config.customFiles);
-              handleNext(SCREENS.INSTALL);
+              handleNext(SCREENS.GALLERY_SETUP);
             }}
             onBack={() => setCurrentScreen(SCREENS.SYSTEM_CHECK)}
+          />
+        )}
+
+        {currentScreen === SCREENS.GALLERY_SETUP && (
+          <GallerySetup
+            onNext={(config) => {
+              setGalleryConfig(config);
+              // If gallery repack produced a custom uImage, merge it into customFiles
+              if (config.customUImagePath) {
+                setCustomFiles(prev => ({
+                  ...(prev || {}),
+                  uimage: config.customUImagePath,
+                }));
+              }
+              handleNext(SCREENS.INSTALL);
+            }}
+            onBack={() => setCurrentScreen(SCREENS.GENERATION_SELECT)}
           />
         )}
 
@@ -96,7 +116,7 @@ function App() {
             customFiles={customFiles}
             onSuccess={() => handleNext(SCREENS.SUCCESS)}
             onError={handleError}
-            onBack={() => setCurrentScreen(SCREENS.GENERATION_SELECT)}
+            onBack={() => setCurrentScreen(SCREENS.GALLERY_SETUP)}
           />
         )}
 

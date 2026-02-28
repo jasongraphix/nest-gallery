@@ -1,7 +1,11 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const { checkSystem, installFirmware, detectDevice } = require('./usb-handler');
 const { installWinUSBDriver } = require('./windows-driver');
+const { convertPhoto, generateThumbnail } = require('./photo-converter');
+const { repackUImage } = require('./firmware-repack');
 
 let mainWindow;
 
@@ -240,6 +244,117 @@ ipcMain.handle('select-firmware-file', async (event, fileType) => {
     return { success: true, filePath: result.filePaths[0] };
   } catch (error) {
     console.error('File selection error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ─── Gallery Photo IPC Handlers ─────────────────────────────────────────────
+
+ipcMain.handle('select-photos', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Photos for Gallery',
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'tiff', 'bmp'] }
+      ]
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return { success: false, canceled: true };
+    }
+
+    return { success: true, filePaths: result.filePaths.slice(0, 10) };
+  } catch (error) {
+    console.error('Photo selection error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('convert-photo', async (event, filePath) => {
+  try {
+    const [rawBuffer, thumbnail] = await Promise.all([
+      convertPhoto(filePath),
+      generateThumbnail(filePath),
+    ]);
+    return { success: true, rawBuffer: rawBuffer.toString('base64'), thumbnail };
+  } catch (error) {
+    console.error('Photo conversion error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('repack-firmware', async (event, options) => {
+  try {
+    const { photoBuffers, galleryUrl } = options;
+
+    // Resolve uImage path
+    let uimagePath;
+    if (app.isPackaged) {
+      uimagePath = path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'firmware', 'uImage');
+    } else {
+      uimagePath = path.join(__dirname, '..', 'resources', 'firmware', 'uImage');
+    }
+
+    // Also check for metadata file
+    const metaPath = uimagePath + '.meta.json';
+
+    // Convert base64 photo strings back to Buffers
+    let photos = null;
+    if (photoBuffers && photoBuffers.length > 0) {
+      photos = photoBuffers.map(b64 => Buffer.from(b64, 'base64'));
+    }
+
+    const repackedBuffer = await repackUImage(uimagePath, {
+      photos,
+      galleryUrl: galleryUrl !== undefined ? galleryUrl : undefined,
+      metaPath: fs.existsSync(metaPath) ? metaPath : undefined,
+    });
+
+    // Write to temp file
+    const tmpDir = os.tmpdir();
+    const tmpPath = path.join(tmpDir, `nle-uImage-${Date.now()}`);
+    fs.writeFileSync(tmpPath, repackedBuffer);
+
+    return { success: true, uimagePath: tmpPath };
+  } catch (error) {
+    console.error('Firmware repack error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-sample-photos', async () => {
+  try {
+    // Look for sample-photos in resources or relative paths
+    let sampleDir;
+    const appModule = require('electron').app;
+
+    if (appModule.isPackaged) {
+      sampleDir = path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'sample-photos');
+    } else {
+      // Development: look relative to project root
+      sampleDir = path.join(__dirname, '..', '..', '..', 'sample-photos');
+    }
+
+    if (!fs.existsSync(sampleDir)) {
+      return { success: false, error: 'Sample photos directory not found' };
+    }
+
+    const files = fs.readdirSync(sampleDir)
+      .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f))
+      .sort()
+      .slice(0, 10);
+
+    const thumbnails = [];
+    for (const file of files) {
+      const filePath = path.join(sampleDir, file);
+      const thumbnail = await generateThumbnail(filePath);
+      thumbnails.push({ name: file, thumbnail, path: filePath });
+    }
+
+    return { success: true, photos: thumbnails };
+  } catch (error) {
+    console.error('Sample photos error:', error);
     return { success: false, error: error.message };
   }
 });

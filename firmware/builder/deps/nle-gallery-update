@@ -2,8 +2,19 @@
 # nle-gallery-update: Fetch/update gallery images from web server
 # Usage: nle-gallery-update [gallery-url] [photo-dir]
 
-GALLERY_URL="${1:-http://nest-gallery.jasongraphix.com}"
+GALLERY_URL="${1:-}"
 PHOTO_DIR="${2:-/media/scratch/nle-photos}"
+
+# Load config file if no URL provided on command line
+if [ -z "$GALLERY_URL" ]; then
+    [ -f /etc/nle-gallery.conf ] && . /etc/nle-gallery.conf
+fi
+
+# Exit gracefully if no gallery URL configured
+if [ -z "$GALLERY_URL" ]; then
+    echo "No gallery URL configured, running in offline mode"
+    exit 0
+fi
 FETCH="/usr/bin/nle-fetch"
 MANIFEST="/tmp/gallery-manifest.txt"
 

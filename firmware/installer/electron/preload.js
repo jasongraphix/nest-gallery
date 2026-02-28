@@ -10,6 +10,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   requestSudo: () => ipcRenderer.invoke('request-sudo'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),
   selectFirmwareFile: (fileType) => ipcRenderer.invoke('select-firmware-file', fileType),
+  selectPhotos: () => ipcRenderer.invoke('select-photos'),
+  convertPhoto: (filePath) => ipcRenderer.invoke('convert-photo', filePath),
+  repackFirmware: (options) => ipcRenderer.invoke('repack-firmware', options),
+  getSamplePhotos: () => ipcRenderer.invoke('get-sample-photos'),
   onInstallationProgress: (callback) => {
     ipcRenderer.on('installation-progress', (event, progress) => callback(progress));
   },

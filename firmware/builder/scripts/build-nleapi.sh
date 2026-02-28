@@ -42,3 +42,23 @@ for img in $WORK_DIR/nest-photos/[0-9][0-9].raw; do
   PHOTO_COUNT=$((PHOTO_COUNT + 1))
 done
 echo "Copied $PHOTO_COUNT gallery images"
+
+# Add gallery config file (empty gallery URL by default — offline mode)
+GALLERY_URL="${GALLERY_URL:-}"
+echo "GALLERY_URL=\"$GALLERY_URL\"" > ${NLEAPIINSTALLDIR}/nle-gallery.conf
+echo "Created nle-gallery.conf (GALLERY_URL='$GALLERY_URL')"
+
+# Add manifest metadata for firmware repack
+cat > ${NLEAPIINSTALLDIR}/.nle-manifest.json << MANIFEST_EOF
+{
+  "version": "1.0.0",
+  "photoSlots": $MAX_EMBED,
+  "photoCount": $PHOTO_COUNT,
+  "galleryUrl": "$GALLERY_URL"
+}
+MANIFEST_EOF
+echo "Created .nle-manifest.json"
+
+# Add padding file for repack headroom (512KB)
+dd if=/dev/zero of=${NLEAPIINSTALLDIR}/.padding bs=1024 count=512 2>/dev/null
+echo "Created .padding file (512KB)"

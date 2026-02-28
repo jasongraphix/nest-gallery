@@ -108,16 +108,8 @@ function GenerationSelect({ onNext, onBack }) {
             <div className="space-y-2">
               <h3 className="font-semibold text-blue-400">Not sure which generation you have?</h3>
               <p className="text-sm text-slate-300">
-                Visit our{' '}
-                <a
-                  href="https://docs.nolongerevil.com/compatibility#how-to-identify-your-nest-thermostat"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary-400 hover:text-primary-300 underline"
-                >
-                  compatibility guide
-                </a>
-                {' '}to identify your device
+                Gen 1 has a stainless steel ring. Gen 2 has a slimmer profile with a wider display.
+                Check the back of the device for the model number: T100577 (Gen 1) or T200577 (Gen 2).
               </p>
             </div>
           </div>

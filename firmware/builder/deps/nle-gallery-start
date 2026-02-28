@@ -13,7 +13,8 @@ WAIT_NET=60
 WAIT_BOOT=30
 MANIFEST="/tmp/gallery-manifest.txt"
 FETCH="/usr/bin/nle-fetch"
-GALLERY_URL="http://nest-gallery.jasongraphix.com"
+GALLERY_URL=""
+[ -f /etc/nle-gallery.conf ] && . /etc/nle-gallery.conf
 
 # Wait for boot to settle
 sleep "$WAIT_BOOT"
@@ -79,8 +80,8 @@ unfreeze_nest() {
 while true; do
     count=$(count_images)
 
-    # If too few images, do a full download before starting gallery
-    if [ "$count" -lt 1 ]; then
+    # If too few images and a gallery URL is configured, do a full download
+    if [ "$count" -lt 1 ] && [ -n "$GALLERY_URL" ]; then
         echo "nle-gallery-start: $count images found, need to download"
         $STATUS "NLE Gallery" "Waiting for network..."
         if wait_for_network; then
@@ -108,6 +109,8 @@ while true; do
         else
             echo "nle-gallery-start: No network after ${WAIT_NET}s"
         fi
+    elif [ "$count" -lt 1 ]; then
+        echo "nle-gallery-start: No images and no gallery URL configured"
     fi
 
     count=$(count_images)

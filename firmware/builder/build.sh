@@ -50,6 +50,8 @@ ENABLE_BACKPLATE_SIM=false
 ENABLE_ROOT_ACCESS=false
 ROOT_PASSWORD="nolongerevil"
 HOSTED_MODE=false
+GALLERY_URL=""
+GALLERY_URL_SET=false
 
 if [ -t 1 ]; then
   RED='\033[0;31m'
@@ -111,6 +113,7 @@ Usage: $(basename "$0") [options]
 
 Options:
   --api-url <url>          Override the default API URL used by the firmware
+  --gallery-url <url>      Set the gallery URL for photo updates (empty = offline mode)
   --build-xloader          Build x-loader from source instead of using prebuilt
   --build-uboot            Build u-boot from source instead of using prebuilt
   --generation <gen>       Specify Nest generation: gen1, gen2, or both (can be specified multiple times)
@@ -145,6 +148,16 @@ parse_args() {
         fi
         API_URL="$1"
         API_URL_SET=true
+        shift
+        ;;
+      --gallery-url)
+        shift
+        if [ -z "${1:-}" ]; then
+          print_error "--gallery-url requires a value"
+          exit 1
+        fi
+        GALLERY_URL="$1"
+        GALLERY_URL_SET=true
         shift
         ;;
       --build-xloader)
@@ -632,6 +645,7 @@ chmod +x /tmp/1/usr/bin/nle-gallery-update || true
 chmod +x /tmp/1/usr/bin/nle-gallery-start || true
 chmod +x /tmp/1/usr/bin/nle-status || true
 echo "nameserver 8.8.8.8" > /tmp/1/etc/resolv.conf || true
+cp /tmp/nleapi/nle-gallery.conf /tmp/1/etc/nle-gallery.conf || true
 rm -rf /tmp/1/etc/nle-photos || true
 # Copy gallery images to /media/scratch (mtdblock14) instead of rootfs
 mkdir -p /tmp/scratch || true
@@ -659,6 +673,7 @@ ROOTME_EOF
       print_warning "rootme script not found at /etc/init.d/rootme"
     fi
 
+    export GALLERY_URL
     bash scripts/build-nleapi.sh
 
     if [ "$DEBUG_PAUSE" = true ]; then

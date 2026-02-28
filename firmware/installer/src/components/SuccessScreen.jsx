@@ -1,14 +1,6 @@
 import React from 'react';
 
 function SuccessScreen() {
-  const openDashboard = () => {
-    if (window.electronAPI && window.electronAPI.openExternal) {
-      window.electronAPI.openExternal('https://nolongerevil.com/dashboard');
-    } else {
-      window.open('https://nolongerevil.com/dashboard', '_blank');
-    }
-  };
-
   return (
     <div className="flex items-center justify-center min-h-full p-8">
       <div className="max-w-2xl w-full space-y-8">
@@ -40,9 +32,9 @@ function SuccessScreen() {
                   1
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white mb-1">Re-attach Nest to back wall plate</h3>
+                  <h3 className="font-semibold text-white mb-1">Wait for boot</h3>
                   <p className="text-sm text-slate-300">
-                    Re-attach the Nest to your back wall plate after it's been booted (3-5 minutes)
+                    Your thermostat will boot and start the photo gallery in 3-5 minutes. Do not disconnect power during this time.
                   </p>
                 </div>
               </div>
@@ -52,13 +44,10 @@ function SuccessScreen() {
                   2
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white mb-1">Create Your Account</h3>
-                  <p className="text-sm text-slate-300 mb-2">
-                    Visit the No Longer Evil dashboard to register or sign in
+                  <h3 className="font-semibold text-white mb-1">Re-attach to wall plate</h3>
+                  <p className="text-sm text-slate-300">
+                    Once the gallery is showing on the display, disconnect the USB cable and re-attach the Nest to your back wall plate to keep it charged.
                   </p>
-                  <button onClick={openDashboard} className="btn-primary text-sm px-4 py-2">
-                    Open Dashboard
-                  </button>
                 </div>
               </div>
 
@@ -67,9 +56,9 @@ function SuccessScreen() {
                   3
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white mb-1">Link Your Device</h3>
+                  <h3 className="font-semibold text-white mb-1">Enjoy your photo frame</h3>
                   <p className="text-sm text-slate-300">
-                    Follow the instructions on the No Longer Evil dashboard to link your device
+                    The gallery will auto-advance every 10 seconds. Use the ring to browse manually. The display sleeps after 5 minutes and wakes on touch.
                   </p>
                 </div>
               </div>
@@ -79,18 +68,16 @@ function SuccessScreen() {
 
         <div className="text-center">
           <p className="text-slate-400 text-sm">
-            Made with ❤️ by{' '}
+            An open-source project &mdash;{' '}
             <button
               onClick={() => {
                 if (window.electronAPI && window.electronAPI.openExternal) {
-                  window.electronAPI.openExternal('https://hackhouse.io');
-                } else {
-                  window.open('https://hackhouse.io', '_blank');
+                  window.electronAPI.openExternal('https://github.com/codykociemba/NoLongerEvil-Thermostat');
                 }
               }}
               className="text-primary-400 hover:text-primary-300 transition-colors underline"
             >
-              Hack House
+              View on GitHub
             </button>
           </p>
         </div>

@@ -35,6 +35,7 @@
     ],
     "asarUnpack": [
       "node_modules/usb/**/*",
+      "node_modules/sharp/**/*",
       "resources/firmware/**/*"
     ],
     "artifactName": "nolongerevil-installer-${os}-${arch}.${ext}",
@@ -73,8 +74,10 @@
     ]
   },
   "dependencies": {
+    "lzma-native": "^8.0.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "sharp": "^0.33.0",
     "sudo-prompt": "^9.2.1",
     "usb": "^2.11.0"
   },
