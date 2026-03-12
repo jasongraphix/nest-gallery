@@ -12,8 +12,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectFirmwareFile: (fileType) => ipcRenderer.invoke('select-firmware-file', fileType),
   selectPhotos: () => ipcRenderer.invoke('select-photos'),
   convertPhoto: (filePath) => ipcRenderer.invoke('convert-photo', filePath),
-  repackFirmware: (options) => ipcRenderer.invoke('repack-firmware', options),
   getSamplePhotos: () => ipcRenderer.invoke('get-sample-photos'),
+  checkGalleryUrl: (url) => ipcRenderer.invoke('check-gallery-url', url),
+  transferPhotos: (host, photos, transferMode) => ipcRenderer.invoke('transfer-photos-ssh', { host, photos, transferMode }),
+  testSSHConnection: (host) => ipcRenderer.invoke('test-ssh-connection', { host }),
   onInstallationProgress: (callback) => {
     ipcRenderer.on('installation-progress', (event, progress) => callback(progress));
   },

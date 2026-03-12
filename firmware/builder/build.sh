@@ -52,6 +52,7 @@ ROOT_PASSWORD="nolongerevil"
 HOSTED_MODE=false
 GALLERY_URL=""
 GALLERY_URL_SET=false
+MINIMAL_BUILD=false
 
 if [ -t 1 ]; then
   RED='\033[0;31m'
@@ -122,6 +123,7 @@ Options:
   --debug-pause            Pause after extracting initramfs for manual editing
   --enable-backplate-sim   Enable backplate simulator in firmware
   --enable-root-access     Enable root access with generated password
+  --minimal                Minimal build: only SSH + root password, no NLE API/gallery
   --yes, -y                Run non-interactively with the provided values
   --help, -h               Show this help message
 
@@ -202,6 +204,12 @@ parse_args() {
         shift
         ;;
       --enable-root-access)
+        ENABLE_ROOT_ACCESS=true
+        NEED_CUSTOM_BUILD=true
+        shift
+        ;;
+      --minimal)
+        MINIMAL_BUILD=true
         ENABLE_ROOT_ACCESS=true
         NEED_CUSTOM_BUILD=true
         shift
@@ -403,6 +411,7 @@ configure_build() {
   echo "  Custom kernel:       $([ "$NEED_CUSTOM_BUILD" = true ] && echo "Yes" || echo "No (using pre-compiled)")"
   echo "  Backplate simulator: $([ "$ENABLE_BACKPLATE_SIM" = true ] && echo "Enabled" || echo "Disabled")"
   echo "  Root access:         $([ "$ENABLE_ROOT_ACCESS" = true ] && echo "Enabled" || echo "Disabled")"
+  echo "  Minimal build:       $([ "$MINIMAL_BUILD" = true ] && echo "Yes (SSH + password only)" || echo "No")"
   echo
 
   if [ "$NON_INTERACTIVE" = false ]; then
@@ -591,29 +600,30 @@ fi
 ROOTME_EOF
       fi
 
-      cat >> "$ROOTME_SCRIPT" << ROOTME_EOF
+      if [ "$MINIMAL_BUILD" != true ]; then
+        cat >> "$ROOTME_SCRIPT" << ROOTME_EOF
 sed -i 's|<a key="cloudregisterurl" value="[^"]*"|<a key="cloudregisterurl" value="$ENTRY_URL"|g' /tmp/1/etc/nestlabs/client.config
 sed -i '/15.204.110.215/d' /tmp/1/etc/hosts
 sed -i '/\/bin\/nolongerevil/d' /tmp/1/etc/init.d/rcS
 
 ROOTME_EOF
 
-      if [ "$USE_CUSTOM_CERT" = true ]; then
-        cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
+        if [ "$USE_CUSTOM_CERT" = true ]; then
+          cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
 cat > /tmp/1/etc/ssl/certs/ca-bundle.pem << 'CA_CERT_EOF'
 ROOTME_EOF
 
-        cat >> "$ROOTME_SCRIPT" << ROOTME_EOF
+          cat >> "$ROOTME_SCRIPT" << ROOTME_EOF
 $CA_CERT_CONTENT
 ROOTME_EOF
 
-        cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
+          cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
 CA_CERT_EOF
 
 ROOTME_EOF
-      fi
+        fi
 
-      cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
+        cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
 cp /tmp/nleapi/nleapi /tmp/1/etc/init.d/nleapi || true
 cp /tmp/nleapi/httpd.monitrc /tmp/1/etc/monit.d/httpd.monitrc || true
 mkdir -p /tmp/1/var/www/cgi-bin/api || true
@@ -633,7 +643,7 @@ if ! grep -q "httpd.monitrc" /tmp/1/etc/monitrc; then
 fi
 ROOTME_EOF
 
-      cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
+        cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
 cp /tmp/nleapi/nle-gallery /tmp/1/usr/bin/nle-gallery || true
 cp /tmp/nleapi/nle-fetch /tmp/1/usr/bin/nle-fetch || true
 cp /tmp/nleapi/nle-gallery-update /tmp/1/usr/bin/nle-gallery-update || true
@@ -646,23 +656,16 @@ chmod +x /tmp/1/usr/bin/nle-gallery-start || true
 chmod +x /tmp/1/usr/bin/nle-status || true
 echo "nameserver 8.8.8.8" > /tmp/1/etc/resolv.conf || true
 cp /tmp/nleapi/nle-gallery.conf /tmp/1/etc/nle-gallery.conf || true
-rm -rf /tmp/1/etc/nle-photos || true
-# Copy gallery images to /media/scratch (mtdblock14) instead of rootfs
-mkdir -p /tmp/scratch || true
-mount -t jffs2 /dev/mtdblock14 /tmp/scratch || true
-mkdir -p /tmp/scratch/nle-photos || true
-for f in /tmp/nleapi/[0-9][0-9].raw; do
-  [ -f "$f" ] && cp "$f" /tmp/scratch/nle-photos/ || true
-done
-umount /tmp/scratch 2>/dev/null || true
 if ! grep -q "nle-gallery" /tmp/1/etc/init.d/rcS; then
   echo '(/usr/bin/nle-gallery-start > /dev/null 2>&1) &' >> /tmp/1/etc/init.d/rcS
 fi
 
 ROOTME_EOF
+      fi
 
       cat >> "$ROOTME_SCRIPT" << 'ROOTME_EOF'
 umount /tmp/1 2>/dev/null || true
+
 reboot
 ROOTME_EOF
 
@@ -673,8 +676,12 @@ ROOTME_EOF
       print_warning "rootme script not found at /etc/init.d/rootme"
     fi
 
-    export GALLERY_URL
-    bash scripts/build-nleapi.sh
+    if [ "$MINIMAL_BUILD" != true ]; then
+      export GALLERY_URL
+      bash scripts/build-nleapi.sh
+    else
+      print_info "Minimal build: skipping NLE API/gallery setup"
+    fi
 
     if [ "$DEBUG_PAUSE" = true ]; then
       echo

@@ -29,36 +29,9 @@ cp $WORK_DIR/deps/nle-gallery-update ${NLEAPIINSTALLDIR}/nle-gallery-update
 cp $WORK_DIR/deps/nle-gallery-start ${NLEAPIINSTALLDIR}/nle-gallery-start
 cp $WORK_DIR/deps/nle-status-arm ${NLEAPIINSTALLDIR}/nle-status
 
-# Copy first 10 pre-converted gallery images (320x320, BGRA, 32bpp, 409600 bytes each)
-# Full set is fetched from web on first wake via nle-gallery-update
-# Source images should be in /work/nest-photos/ as 01.raw, 02.raw, etc.
-echo "Copying gallery images (first 10)..."
-PHOTO_COUNT=0
-MAX_EMBED=10
-for img in $WORK_DIR/nest-photos/[0-9][0-9].raw; do
-  [ -f "$img" ] || continue
-  [ $PHOTO_COUNT -ge $MAX_EMBED ] && break
-  cp "$img" ${NLEAPIINSTALLDIR}/$(basename "$img")
-  PHOTO_COUNT=$((PHOTO_COUNT + 1))
-done
-echo "Copied $PHOTO_COUNT gallery images"
+# Photos are transferred over SSH/WiFi after DFU flash — not embedded in initramfs
 
 # Add gallery config file (empty gallery URL by default — offline mode)
 GALLERY_URL="${GALLERY_URL:-}"
 echo "GALLERY_URL=\"$GALLERY_URL\"" > ${NLEAPIINSTALLDIR}/nle-gallery.conf
 echo "Created nle-gallery.conf (GALLERY_URL='$GALLERY_URL')"
-
-# Add manifest metadata for firmware repack
-cat > ${NLEAPIINSTALLDIR}/.nle-manifest.json << MANIFEST_EOF
-{
-  "version": "1.0.0",
-  "photoSlots": $MAX_EMBED,
-  "photoCount": $PHOTO_COUNT,
-  "galleryUrl": "$GALLERY_URL"
-}
-MANIFEST_EOF
-echo "Created .nle-manifest.json"
-
-# Add padding file for repack headroom (512KB)
-dd if=/dev/zero of=${NLEAPIINSTALLDIR}/.padding bs=1024 count=512 2>/dev/null
-echo "Created .padding file (512KB)"

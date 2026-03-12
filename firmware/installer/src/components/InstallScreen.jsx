@@ -29,7 +29,6 @@ function InstallScreen({ systemInfo, generation, customFiles, onSuccess, onError
         setProgress(progressData.percent);
       }
 
-      // Update stage based on progress
       if (progressData.stage === 'waiting') {
         setStage(INSTALL_STAGES.WAITING);
       } else if (progressData.stage === 'detected') {
@@ -59,13 +58,13 @@ function InstallScreen({ systemInfo, generation, customFiles, onSuccess, onError
     };
   }, []);
 
-  useEffect(() => {
-    if (stage === INSTALL_STAGES.WAITING && !isInstalling && !hasStartedRef.current) {
+  const handleReadyToFlash = () => {
+    if (!hasStartedRef.current) {
       console.log('Starting installation - omap_loader will wait for device...');
       hasStartedRef.current = true;
       startInstallation();
     }
-  }, [stage, isInstalling]);
+  };
 
   const startInstallation = async () => {
     setIsInstalling(true);
@@ -92,31 +91,9 @@ function InstallScreen({ systemInfo, generation, customFiles, onSuccess, onError
       }
 
       if (result.success) {
-        const progress = result.progress || {};
-
-        if (progress.hasJump) {
-          setProgress(100);
-          setStage(INSTALL_STAGES.COMPLETE);
-          setMessage('Installation complete! Device is booting...');
-        } else if (progress.hasKernel) {
-          setProgress(90);
-          setStage(INSTALL_STAGES.COMPLETE);
-          setMessage('Kernel flashed successfully!');
-        } else if (progress.hasUboot) {
-          setProgress(75);
-          setStage(INSTALL_STAGES.COMPLETE);
-          setMessage('U-boot flashed successfully!');
-        } else if (progress.hasXload) {
-          setProgress(50);
-          setStage(INSTALL_STAGES.COMPLETE);
-          setMessage('X-load flashed successfully!');
-        } else {
-          setProgress(100);
-          setStage(INSTALL_STAGES.COMPLETE);
-          setMessage('Installation complete!');
-        }
-
-        setTimeout(() => onSuccess(), 2000);
+        setProgress(100);
+        setStage(INSTALL_STAGES.COMPLETE);
+        setMessage('Firmware flashed successfully!');
       } else {
         console.error('Installation failed:', result.error);
         onError(result.error || 'Installation failed');
@@ -144,7 +121,7 @@ function InstallScreen({ systemInfo, generation, customFiles, onSuccess, onError
       case INSTALL_STAGES.FLASHING_KERNEL:
         return 'Flashing Linux kernel...';
       case INSTALL_STAGES.COMPLETE:
-        return message || 'Installation complete!';
+        return 'Firmware flashed successfully!';
       default:
         return message || 'Processing...';
     }
@@ -215,43 +192,49 @@ function InstallScreen({ systemInfo, generation, customFiles, onSuccess, onError
                 </div>
               </div>
 
-              <div className="flex gap-4 p-4 bg-slate-700/50 rounded-lg">
+              <div className="flex gap-4 p-4 bg-primary-600/20 border-2 border-primary-600 rounded-lg">
                 <div className="flex-shrink-0 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center font-bold">
                   3
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white mb-1">Reboot the Device</h3>
+                  <h3 className="font-semibold text-white mb-1">Flash the Firmware</h3>
                   <p className="text-sm text-slate-300">
-                    Press and hold the display (or back of device) for 10-15 seconds until it reboots
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-4 p-4 bg-primary-600/20 border-2 border-primary-600 rounded-lg">
-                <div className="flex-shrink-0 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center font-bold">
-                  4
-                </div>
-                <div>
-                  <h3 className="font-semibold text-white mb-1">Enter DFU Mode</h3>
-                  <p className="text-sm text-slate-300">
-                    The device will automatically enter DFU mode on reboot. The installer will detect it and begin flashing.
+                    Click the Ready to Flash button below, then press and hold the display (or back of device) for 10-15 seconds until it reboots.
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-center py-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
-                <span className="text-slate-300">Waiting for device connection...</span>
+            <div className="py-6 space-y-4">
+              {isInstalling && (
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
+                  <span className="text-slate-300">Waiting for device connection...</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={onBack}
+                  className="btn-secondary px-6"
+                >
+                  Back
+                </button>
+                {isInstalling ? (
+                  <button
+                    onClick={onBack}
+                    className="btn-secondary px-6"
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleReadyToFlash}
+                    className="btn-primary px-8"
+                  >
+                    Ready to Flash
+                  </button>
+                )}
               </div>
-              <button
-                onClick={onBack}
-                disabled={isInstalling}
-                className="btn-secondary"
-              >
-                Cancel
-              </button>
             </div>
           </div>
         )}
@@ -259,14 +242,14 @@ function InstallScreen({ systemInfo, generation, customFiles, onSuccess, onError
         {deviceDetected && (
           <div className="card space-y-6">
             <div className="flex items-center justify-center py-8">
-              {stage !== INSTALL_STAGES.COMPLETE ? (
-                <div className="w-20 h-20 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-              ) : (
+              {stage === INSTALL_STAGES.COMPLETE ? (
                 <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center">
                   <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
+              ) : (
+                <div className="w-20 h-20 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
               )}
             </div>
 
@@ -293,37 +276,46 @@ function InstallScreen({ systemInfo, generation, customFiles, onSuccess, onError
                   <span className={progress >= 50 ? 'text-white' : 'text-slate-500'}>u-boot</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className={`w-2 h-2 rounded-full ${stage === INSTALL_STAGES.FLASHING_KERNEL ? 'bg-primary-500 animate-pulse' : progress >= 75 ? 'bg-green-500' : 'bg-slate-600'}`}></div>
-                  <span className={progress >= 75 ? 'text-white' : 'text-slate-500'}>Linux kernel (uImage)</span>
+                  <div className={`w-2 h-2 rounded-full ${stage === INSTALL_STAGES.FLASHING_KERNEL ? 'bg-primary-500 animate-pulse' : progress >= 60 ? 'bg-green-500' : 'bg-slate-600'}`}></div>
+                  <span className={progress >= 60 ? 'text-white' : 'text-slate-500'}>Linux kernel (uImage)</span>
                 </div>
               </div>
             </div>
 
             {stage !== INSTALL_STAGES.COMPLETE && (
-              <>
-                {isInstalling && stage === INSTALL_STAGES.WAITING && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-                    <div className="flex gap-3">
-                      <svg className="w-6 h-6 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <p className="text-sm text-slate-300">
-                        <strong className="text-white">Please wait:</strong> The installer is waiting for your device to enter DFU mode. Follow the instructions above if you haven't already connected your device.
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <svg className="w-6 h-6 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p className="text-sm text-slate-300">
+                    <strong className="text-white">Important:</strong> Keep your device connected via USB. Do not disconnect or power off during installation.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {stage === INSTALL_STAGES.COMPLETE && (
+              <div className="space-y-4">
+                <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
                   <div className="flex gap-3">
-                    <svg className="w-6 h-6 text-blue-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg className="w-6 h-6 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     <p className="text-sm text-slate-300">
-                      <strong className="text-white">Important:</strong> Keep your device connected via USB. Do not disconnect or power off during installation.
+                      The Nest should boot with a photo within a few seconds. After a few minutes, the device will reboot to the Nest logo. Wait until it's finished booting, then disconnect the USB cable and click the button below.
                     </p>
                   </div>
                 </div>
-              </>
+                <div className="flex justify-center">
+                  <button
+                    onClick={onSuccess}
+                    className="btn-primary px-8"
+                  >
+                    Reboot Complete
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         )}

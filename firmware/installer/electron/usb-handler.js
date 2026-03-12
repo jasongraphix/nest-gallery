@@ -25,6 +25,7 @@ function getFirmwarePaths(generation = 'gen2', customFiles = null) {
     xload: path.join(firmwareDir, `x-load-${generation}.bin`),
     uboot: path.join(firmwareDir, 'u-boot.bin'),
     uimage: path.join(firmwareDir, 'uImage'),
+    envbin: path.join(firmwareDir, 'uboot-env.bin'),
   };
 
   if (!customFiles) {
@@ -96,7 +97,7 @@ async function checkSystem() {
     const missingFiles = [];
     if (!fs.existsSync(gen1Paths.xload)) missingFiles.push('x-load-gen1.bin');
     if (!fs.existsSync(gen2Paths.xload)) missingFiles.push('x-load-gen2.bin');
-    if (!fs.existsSync(gen1Paths.uboot) || !fs.existsSync(gen2Paths.uboot)) missingFiles.push('u-boot.bin');
+    if (!fs.existsSync(gen1Paths.uboot) || !fs.existsSync(gen2Paths.uboot)) missingFiles.push('u-boot-rescue2.bin');
     if (!fs.existsSync(gen1Paths.uimage) || !fs.existsSync(gen2Paths.uimage)) missingFiles.push('uImage');
 
     const hasRequiredFiles = missingFiles.length === 0;
@@ -233,11 +234,11 @@ async function installFirmware(progressCallback, generation = 'gen2', customFile
       }
     }
 
-    // Build file list for flashOmap
+    // Build file list for flashOmap (3-file DFU matching original install.sh)
     const files = [
       { path: firmwarePaths.xload }, // First file always at base address (0x40200000)
       { path: firmwarePaths.uboot, addr: 0x80100000 },
-      { path: firmwarePaths.uimage, addr: 0x80A00000 }
+      { path: firmwarePaths.uimage, addr: 0x80A00000 },
     ];
 
     const jumpTarget = 0x80100000; // Jump to U-Boot

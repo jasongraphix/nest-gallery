@@ -33,7 +33,8 @@ echo "[→] Building Linux kernel..."
 cd "$LINUX_DIR"
 
 echo "[→] Configuring with gtvhacker_defconfig..."
-make ARCH=arm distclean gtvhacker_defconfig
+make ARCH=arm distclean
+make ARCH=arm gtvhacker_defconfig
 
 echo "[→] Patching kernel for Perl 5.22+ compatibility..."
 # Fix timeconst.pl for newer Perl versions (removes deprecated defined(@array) usage)

@@ -1,21 +1,28 @@
 import React from 'react';
+import nestGalleryIcon from '../assets/nest-gallery-icon.png';
 
 function WelcomeScreen({ onNext }) {
   return (
     <div className="flex items-center justify-center min-h-full p-8">
       <div className="max-w-2xl w-full space-y-8">
         <div className="text-center space-y-4">
-
+          <img
+            src={nestGalleryIcon}
+            alt="Nest Photo Gallery"
+            className="mx-auto"
+            width={75}
+            height={75}
+          />
           <p className="text-xl text-slate-400">
-            Firmware Installation Wizard
+            Nest Photo Gallery Installer
           </p>
         </div>
 
         <div className="card space-y-6">
           <div className="space-y-4">
-            <h2 className="text-2xl font-semibold text-white">Welcome</h2>
+            <h2 className="text-2xl font-semibold text-white">Convert your deprecated thermostat into a photo frame</h2>
             <p className="text-slate-300 leading-relaxed">
-              This installer will flash custom firmware to your Nest Thermostat, giving you complete control over your device.
+              This installer adds a photo gallery feature to 2nd generation Nest thermostats to display your own photos on the device's round display.
             </p>
           </div>
 
@@ -27,7 +34,7 @@ function WelcomeScreen({ onNext }) {
               <div className="space-y-2">
                 <h3 className="font-semibold text-yellow-400">Warning: Experimental Software</h3>
                 <p className="text-sm text-slate-300">
-                  This software is in the experimental phase. Do not use on thermostats critical for heating or cooling. Flashing may brick your device.
+                  Only use on thermostats you no longer need for heating and cooling. This firmware pauses the Nest's thermostat functionality when the gallery is active. Flashing may brick your device.
                 </p>
               </div>
             </div>
@@ -40,7 +47,7 @@ function WelcomeScreen({ onNext }) {
                 <svg className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <span>Nest Learning Thermostat (Gen 1 or Gen 2)</span>
+                <span>Gen 2 Nest Learning Thermostat (Gen 1 not supported)</span>
               </li>
               <li className="flex gap-3">
                 <svg className="w-5 h-5 text-primary-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">

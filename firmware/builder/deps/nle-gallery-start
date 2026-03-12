@@ -25,6 +25,21 @@ if ! mount | grep -q "/media/scratch"; then
 fi
 mkdir -p "$PHOTO_DIR"
 
+# If scratch has no photos, copy from rootfs fallback
+FALLBACK_DIR="/usr/share/nle-photos"
+if [ -d "$FALLBACK_DIR" ]; then
+    count=0
+    for f in "$PHOTO_DIR"/*.raw; do
+        [ -f "$f" ] && count=$((count + 1))
+    done
+    if [ "$count" -eq 0 ]; then
+        echo "nle-gallery-start: No photos on scratch, copying from rootfs fallback"
+        for f in "$FALLBACK_DIR"/*.raw; do
+            [ -f "$f" ] && cp "$f" "$PHOTO_DIR/" 2>/dev/null
+        done
+    fi
+fi
+
 # Count valid images (correct size only)
 count_images() {
     n=0

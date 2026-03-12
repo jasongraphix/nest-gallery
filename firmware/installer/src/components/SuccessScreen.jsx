@@ -1,6 +1,6 @@
 import React from 'react';
 
-function SuccessScreen() {
+function SuccessScreen({ onUpdatePhotos }) {
   return (
     <div className="flex items-center justify-center min-h-full p-8">
       <div className="max-w-2xl w-full space-y-8">
@@ -17,7 +17,7 @@ function SuccessScreen() {
             Installation Complete!
           </h1>
           <p className="text-xl text-slate-400">
-            Your Nest Thermostat is now No Longer Evil
+            Your Nest Thermostat is not only No Longer Evil,<br /> it can also display photos now!
           </p>
         </div>
 
@@ -34,7 +34,7 @@ function SuccessScreen() {
                 <div>
                   <h3 className="font-semibold text-white mb-1">Wait for boot</h3>
                   <p className="text-sm text-slate-300">
-                    Your thermostat will boot and start the photo gallery in 3-5 minutes. Do not disconnect power during this time.
+                    Your thermostat will boot and start the photo gallery in 3-5 minutes. Do not disconnect power during this time. If it doesn't boot up after 5 minutes, hold the button down until the Nest logo displays.
                   </p>
                 </div>
               </div>
@@ -44,9 +44,9 @@ function SuccessScreen() {
                   2
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white mb-1">Re-attach to wall plate</h3>
+                  <h3 className="font-semibold text-white mb-1">Keep it powered</h3>
                   <p className="text-sm text-slate-300">
-                    Once the gallery is showing on the display, disconnect the USB cable and re-attach the Nest to your back wall plate to keep it charged.
+                    Once the gallery is showing on the display, you can keep it powered via the USB cable or re-attach the Nest to the base. If you use the base, you'll need a 24 VAC transformer plugged into the RC and C terminals to keep it charged.
                   </p>
                 </div>
               </div>
@@ -66,7 +66,15 @@ function SuccessScreen() {
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="flex flex-col items-center gap-4">
+          {onUpdatePhotos && (
+            <button
+              onClick={onUpdatePhotos}
+              className="btn-primary px-8"
+            >
+              Transfer More Photos
+            </button>
+          )}
           <p className="text-slate-400 text-sm">
             An open-source project &mdash;{' '}
             <button

@@ -1,11 +1,10 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
 const { checkSystem, installFirmware, detectDevice } = require('./usb-handler');
 const { installWinUSBDriver } = require('./windows-driver');
 const { convertPhoto, generateThumbnail } = require('./photo-converter');
-const { repackUImage } = require('./firmware-repack');
+const { transferPhotosSSH, testSSHConnection } = require('./ssh-transfer');
 
 let mainWindow;
 
@@ -20,7 +19,7 @@ function createWindow() {
     minWidth: 800,
     minHeight: 700,
     center: true,
-    title: 'No Longer Evil Thermostat Setup',
+    title: 'Nest Photo Gallery Installer',
     icon: path.join(__dirname, '../build/appicon.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -264,7 +263,7 @@ ipcMain.handle('select-photos', async () => {
       return { success: false, canceled: true };
     }
 
-    return { success: true, filePaths: result.filePaths.slice(0, 10) };
+    return { success: true, filePaths: result.filePaths };
   } catch (error) {
     console.error('Photo selection error:', error);
     return { success: false, error: error.message };
@@ -284,41 +283,32 @@ ipcMain.handle('convert-photo', async (event, filePath) => {
   }
 });
 
-ipcMain.handle('repack-firmware', async (event, options) => {
+// ─── SSH Photo Transfer ─────────────────────────────────────────────────────
+
+ipcMain.handle('transfer-photos-ssh', async (event, { host, photos, transferMode }) => {
   try {
-    const { photoBuffers, galleryUrl } = options;
-
-    // Resolve uImage path
-    let uimagePath;
-    if (app.isPackaged) {
-      uimagePath = path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'firmware', 'uImage');
-    } else {
-      uimagePath = path.join(__dirname, '..', 'resources', 'firmware', 'uImage');
-    }
-
-    // Also check for metadata file
-    const metaPath = uimagePath + '.meta.json';
-
-    // Convert base64 photo strings back to Buffers
-    let photos = null;
-    if (photoBuffers && photoBuffers.length > 0) {
-      photos = photoBuffers.map(b64 => Buffer.from(b64, 'base64'));
-    }
-
-    const repackedBuffer = await repackUImage(uimagePath, {
+    const result = await transferPhotosSSH({
+      host,
       photos,
-      galleryUrl: galleryUrl !== undefined ? galleryUrl : undefined,
-      metaPath: fs.existsSync(metaPath) ? metaPath : undefined,
+      transferMode: transferMode || 'replace',
+      onProgress: (progress) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('installation-progress', progress);
+        }
+      },
     });
-
-    // Write to temp file
-    const tmpDir = os.tmpdir();
-    const tmpPath = path.join(tmpDir, `nle-uImage-${Date.now()}`);
-    fs.writeFileSync(tmpPath, repackedBuffer);
-
-    return { success: true, uimagePath: tmpPath };
+    return result;
   } catch (error) {
-    console.error('Firmware repack error:', error);
+    console.error('SSH photo transfer error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('test-ssh-connection', async (event, { host }) => {
+  try {
+    return await testSSHConnection(host);
+  } catch (error) {
+    console.error('SSH connection test error:', error);
     return { success: false, error: error.message };
   }
 });
@@ -356,5 +346,28 @@ ipcMain.handle('get-sample-photos', async () => {
   } catch (error) {
     console.error('Sample photos error:', error);
     return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('check-gallery-url', async (event, url) => {
+  try {
+    const http = require('http');
+    const manifestUrl = url.replace(/\/$/, '') + '/gallery.txt';
+    const text = await new Promise((resolve, reject) => {
+      http.get(manifestUrl, { timeout: 5000 }, (res) => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`));
+          res.resume();
+          return;
+        }
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => resolve(data));
+      }).on('error', reject);
+    });
+    const hasRaw = /\.raw/i.test(text);
+    return { success: true, hasRaw };
+  } catch {
+    return { success: false };
   }
 });

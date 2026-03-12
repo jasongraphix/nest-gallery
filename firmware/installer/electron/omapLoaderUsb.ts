@@ -27,7 +27,7 @@ const OMAP_PERIPH_BOOT = 0xf0030002;
 const OMAP_ASIC_ID_LEN = 69;
 
 // USB Transfer Settings
-const USB_TIMEOUT = 1000; // milliseconds
+const USB_TIMEOUT = 5000; // milliseconds (increased for reliable NAND writes)
 const MAX_CHUNK_SIZE = 512; // bytes per write
 const DEVICE_TIMEOUT = 60000; // 60 seconds
 // Use setImmediate for maximum speed polling (next event loop tick, ~0ms)
@@ -389,7 +389,7 @@ async function transferOtherFiles(
   const bufSize = 128 * 4; // 128 uint32's = 512 bytes
   let curFileIndex = 1; // Skip first-stage file
   let numFailures = 0;
-  const maxFailures = 3;
+  const maxFailures = 10;
 
   try {
     logInfo(`Starting X-Loader communication for ${files.length - 1} additional file(s)`, opts);
