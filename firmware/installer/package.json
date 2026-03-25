@@ -1,13 +1,13 @@
 {
-  "name": "nolongerevil-installer",
+  "name": "nest-gallery-installer",
   "version": "1.0.0",
-  "description": "NoLongerEvil Thermostat Firmware Installer",
+  "description": "Nest Gallery — turn a retired Nest thermostat into a photo frame",
   "main": "electron/main.js",
-  "author": "NoLongerEvil",
+  "author": "Jason Beaird",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/codykociemba/NoLongerEvil-Thermostat"
+    "url": "https://github.com/jasongraphix/nest-gallery"
   },
   "scripts": {
     "dev": "vite",
@@ -70,8 +70,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "codykociemba",
-        "repo": "NoLongerEvil-Thermostat"
+        "owner": "jasongraphix",
+        "repo": "nest-gallery"
       }
     ]
   },
