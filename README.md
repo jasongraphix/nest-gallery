@@ -1,4 +1,4 @@
-# No Longer Evil — Nest Photo Gallery
+# Nest Gallery
 
 Turn your retired Nest Learning Thermostat (Gen 1 or Gen 2) into a tiny digital photo frame.
 
@@ -23,7 +23,7 @@ Flashes custom firmware that replaces the Nest UI with a photo gallery:
 
 ## Quick Start
 
-1. **Download** the installer from [Releases](https://github.com/codykociemba/NoLongerEvil-Thermostat/releases)
+1. **Download** the installer from [Releases](https://github.com/jasongraphix/nest-gallery/releases)
 2. **Run the installer** and choose **Install firmware + photos**
 3. **Connect** your Nest via USB and follow the prompts to enter DFU mode
 4. **Wait 3-5 minutes** for the Nest to reboot and join your WiFi network
@@ -83,8 +83,6 @@ npm run package:linux   # Linux
 | Flag | Description |
 |------|-------------|
 | `--generation gen1\|gen2\|both` | Target device generation (default: gen2) |
-| `--minimal` | SSH + root access only, skip NLE API/gallery files |
-| `--enable-root-access` | Enable SSH with a unique generated password |
 | `--force-build` | Force kernel rebuild even if cached |
 | `--debug-pause` | Pause after initramfs extraction for manual editing |
 
