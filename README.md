@@ -1,6 +1,6 @@
 # Nest Gallery
 
-Turn your retired Nest Learning Thermostat (Gen 1 or Gen 2) into a tiny digital photo frame.
+Turn your retired Gen2 Nest Learning Thermostat into a tiny digital photo frame.
 
 > **Warning: Experimental Software** — This firmware replaces the stock Nest software. Only use on thermostats you no longer need for heating/cooling. Flashing may brick your device.
 
@@ -16,8 +16,8 @@ Flashes custom firmware that replaces the Nest UI with a photo gallery:
 
 ## Requirements
 
-- Nest Learning Thermostat Gen 1 or Gen 2
-- USB-A to USB-A cable (Gen 2) or USB-A to Mini-USB (Gen 1)
+- Nest Learning Thermostat (Gen 2)
+- Micro-USB cable
 - Device charged to at least 50%
 - Device connected to your WiFi network
 
