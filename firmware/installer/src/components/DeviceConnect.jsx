@@ -29,12 +29,19 @@ function DeviceConnect({ onNext, onBack, mode, generatedPassword }) {
     setStatus('testing');
     setErrorMsg('');
 
-    // Try stored password first, then fall back to bootstrap default
+    const BOOTSTRAP = 'nolongerevil';
     const storedPassword = getStoredPassword(trimmed);
-    const passwordToTry = storedPassword || 'nolongerevil';
+    const passwordsToTry = storedPassword
+      ? [storedPassword, BOOTSTRAP]
+      : [BOOTSTRAP];
 
     try {
-      const result = await window.electronAPI.testSSHConnection(trimmed, passwordToTry);
+      let result;
+      let passwordToTry;
+      for (const pwd of passwordsToTry) {
+        result = await window.electronAPI.testSSHConnection(trimmed, pwd);
+        if (result.success) { passwordToTry = pwd; break; }
+      }
       if (result.success) {
         localStorage.setItem('nle-last-ip', trimmed);
 
