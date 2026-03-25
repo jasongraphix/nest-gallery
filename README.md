@@ -112,6 +112,7 @@ The initramfs runs an init script (`rootme`) that installs the gallery binary an
 
 ## Credits & Acknowledgments
 
+- **[codykociemba](https://github.com/codykociemba)** — [NoLongerEvil-Thermostat](https://github.com/codykociemba/NoLongerEvil-Thermostat), the original project this is built upon
 - **[grant-h](https://github.com/grant-h) / [ajb142](https://github.com/ajb142)** — [omap_loader](https://github.com/ajb142/omap_loader), the USB bootloader tool for OMAP devices
 - **[exploiteers (GTVHacker)](https://github.com/exploiteers)** — Original [Nest DFU attack](https://github.com/exploiteers/NestDFUAttack) research
 - **[FULU](https://bounties.fulu.org/)** — Funding the [Nest Learning Thermostat bounty](https://bounties.fulu.org/bounties/nest-learning-thermostat-gen-1-2) and supporting right-to-repair
