@@ -4,7 +4,7 @@ const fs = require('fs');
 const { checkSystem, installFirmware, detectDevice } = require('./usb-handler');
 const { installWinUSBDriver } = require('./windows-driver');
 const { convertPhoto, generateThumbnail } = require('./photo-converter');
-const { transferPhotosSSH, testSSHConnection } = require('./ssh-transfer');
+const { transferPhotosSSH, testSSHConnection, changePassword } = require('./ssh-transfer');
 
 let mainWindow;
 
@@ -285,12 +285,14 @@ ipcMain.handle('convert-photo', async (event, filePath) => {
 
 // ─── SSH Photo Transfer ─────────────────────────────────────────────────────
 
-ipcMain.handle('transfer-photos-ssh', async (event, { host, photos, transferMode }) => {
+ipcMain.handle('transfer-photos-ssh', async (event, { host, photos, transferMode, galleryUrl, password }) => {
   try {
     const result = await transferPhotosSSH({
       host,
       photos,
       transferMode: transferMode || 'replace',
+      galleryUrl: galleryUrl !== undefined ? galleryUrl : null,
+      password: password || undefined,
       onProgress: (progress) => {
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('installation-progress', progress);
@@ -304,11 +306,20 @@ ipcMain.handle('transfer-photos-ssh', async (event, { host, photos, transferMode
   }
 });
 
-ipcMain.handle('test-ssh-connection', async (event, { host }) => {
+ipcMain.handle('test-ssh-connection', async (event, { host, password }) => {
   try {
-    return await testSSHConnection(host);
+    return await testSSHConnection(host, password);
   } catch (error) {
     console.error('SSH connection test error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('change-password', async (event, { host, oldPassword, newPassword }) => {
+  try {
+    return await changePassword(host, oldPassword, newPassword);
+  } catch (error) {
+    console.error('Password change error:', error);
     return { success: false, error: error.message };
   }
 });

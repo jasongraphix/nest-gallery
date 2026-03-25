@@ -23,6 +23,13 @@ const SCREENS = {
   ERROR: 'error',
 };
 
+function generatePassword() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  const arr = new Uint8Array(12);
+  window.crypto.getRandomValues(arr);
+  return Array.from(arr).map(b => chars[b % chars.length]).join('');
+}
+
 function App() {
   const [currentScreen, setCurrentScreen] = useState(SCREENS.WELCOME);
   const [mode, setMode] = useState(null); // 'install' | 'update-photos'
@@ -32,6 +39,7 @@ function App() {
   const [galleryConfig, setGalleryConfig] = useState(null);
   const [deviceIP, setDeviceIP] = useState('');
   const [devicePhotoCount, setDevicePhotoCount] = useState(0);
+  const [devicePassword, setDevicePassword] = useState(null);
   const [error, setError] = useState(null);
   const [platform, setPlatform] = useState(null);
 
@@ -78,6 +86,7 @@ function App() {
   const handleModeSelect = (selectedMode) => {
     setMode(selectedMode);
     if (selectedMode === 'install') {
+      setDevicePassword(generatePassword());
       setCurrentScreen(SCREENS.SYSTEM_CHECK);
     } else {
       // update-photos: connect to device first so we know photo count
@@ -153,9 +162,12 @@ function App() {
 
         {currentScreen === SCREENS.DEVICE_CONNECT && (
           <DeviceConnect
-            onNext={(ip, photoCount) => {
+            mode={mode}
+            generatedPassword={devicePassword}
+            onNext={(ip, photoCount, password) => {
               setDeviceIP(ip);
               if (photoCount !== undefined) setDevicePhotoCount(photoCount);
+              if (password) setDevicePassword(password);
               handleNext(SCREENS.GALLERY_SETUP);
             }}
             onBack={() => setCurrentScreen(deviceConnectBack)}
@@ -165,6 +177,7 @@ function App() {
         {currentScreen === SCREENS.PHOTO_TRANSFER && (
           <PhotoTransfer
             deviceIP={deviceIP}
+            devicePassword={devicePassword}
             galleryConfig={galleryConfig}
             onSuccess={() => handleNext(SCREENS.SUCCESS)}
             onError={handleError}
@@ -174,6 +187,8 @@ function App() {
 
         {currentScreen === SCREENS.SUCCESS && (
           <SuccessScreen
+            mode={mode}
+            devicePassword={devicePassword}
             onUpdatePhotos={() => {
               setMode('update-photos');
               setCurrentScreen(SCREENS.GALLERY_SETUP);

@@ -6,7 +6,7 @@ function GallerySetup({ onNext, onBack, isUpdateMode, devicePhotoCount = 0 }) {
   const [photoSource, setPhotoSource] = useState('sample'); // 'sample' or 'custom'
   const [samplePhotos, setSamplePhotos] = useState([]);
   const [customPhotos, setCustomPhotos] = useState([]); // { path, thumbnail, rawBuffer (base64), converting }
-  const [galleryUrl, setGalleryUrl] = useState('');
+  const [galleryUrl, setGalleryUrl] = useState(() => localStorage.getItem('nle-gallery-url') || '');
   const [transferMode, setTransferMode] = useState('replace'); // 'replace' or 'add'
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [error, setError] = useState(null);
@@ -97,10 +97,16 @@ function GallerySetup({ onNext, onBack, isUpdateMode, devicePhotoCount = 0 }) {
         }));
     }
 
+    const trimmedUrl = galleryUrl.trim();
+    if (trimmedUrl) {
+      localStorage.setItem('nle-gallery-url', trimmedUrl);
+    } else {
+      localStorage.removeItem('nle-gallery-url');
+    }
     onNext({
       photoSource,
       photosToTransfer,
-      galleryUrl: galleryUrl.trim(),
+      galleryUrl: trimmedUrl,
       transferMode,
     });
   };

@@ -1,10 +1,26 @@
 import React, { useState } from 'react';
 
-function DeviceConnect({ onNext, onBack }) {
-  const [ip, setIp] = useState('');
-  const [status, setStatus] = useState('idle'); // idle | testing | connected | failed
+function DeviceConnect({ onNext, onBack, mode, generatedPassword }) {
+  const [ip, setIp] = useState(() => localStorage.getItem('nle-last-ip') || '');
+  const [status, setStatus] = useState('idle'); // idle | testing | changing-password | connected | failed
   const [errorMsg, setErrorMsg] = useState('');
   const [photoCount, setPhotoCount] = useState(0);
+  const [resolvedPassword, setResolvedPassword] = useState(null);
+
+  const getStoredPassword = (ipAddr) => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('nle-device-passwords') || '{}');
+      return stored[ipAddr] || null;
+    } catch { return null; }
+  };
+
+  const storePassword = (ipAddr, password) => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('nle-device-passwords') || '{}');
+      stored[ipAddr] = password;
+      localStorage.setItem('nle-device-passwords', JSON.stringify(stored));
+    } catch {}
+  };
 
   const handleTest = async () => {
     const trimmed = ip.trim();
@@ -13,9 +29,31 @@ function DeviceConnect({ onNext, onBack }) {
     setStatus('testing');
     setErrorMsg('');
 
+    // Try stored password first, then fall back to bootstrap default
+    const storedPassword = getStoredPassword(trimmed);
+    const passwordToTry = storedPassword || 'nolongerevil';
+
     try {
-      const result = await window.electronAPI.testSSHConnection(trimmed);
+      const result = await window.electronAPI.testSSHConnection(trimmed, passwordToTry);
       if (result.success) {
+        localStorage.setItem('nle-last-ip', trimmed);
+
+        if (mode === 'install' && generatedPassword) {
+          // Change from bootstrap password to the generated unique one
+          setStatus('changing-password');
+          const changeResult = await window.electronAPI.changePassword(trimmed, passwordToTry, generatedPassword);
+          if (changeResult.success) {
+            storePassword(trimmed, generatedPassword);
+            setResolvedPassword(generatedPassword);
+          } else {
+            // Password change failed — still let them proceed with bootstrap password
+            console.warn('Password change failed:', changeResult.error);
+            setResolvedPassword(passwordToTry);
+          }
+        } else {
+          setResolvedPassword(passwordToTry);
+        }
+
         setStatus('connected');
         setPhotoCount(result.photoCount || 0);
       } else {
@@ -29,7 +67,7 @@ function DeviceConnect({ onNext, onBack }) {
   };
 
   const handleContinue = () => {
-    onNext(ip.trim(), photoCount);
+    onNext(ip.trim(), photoCount, resolvedPassword);
   };
 
   const handleKeyDown = (e) => {
@@ -71,16 +109,16 @@ function DeviceConnect({ onNext, onBack }) {
                 />
                 <button
                   onClick={handleTest}
-                  disabled={!ip.trim() || status === 'testing'}
+                  disabled={!ip.trim() || status === 'testing' || status === 'changing-password'}
                   className={`${status === 'connected' ? 'btn-secondary' : 'btn-primary'} px-6 disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {status === 'testing' ? (
+                  {(status === 'testing' || status === 'changing-password') ? (
                     <span className="flex items-center gap-2">
                       <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Testing...
+                      {status === 'changing-password' ? 'Securing...' : 'Testing...'}
                     </span>
                   ) : 'Test Connection'}
                 </button>

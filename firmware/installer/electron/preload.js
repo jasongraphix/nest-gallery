@@ -14,8 +14,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   convertPhoto: (filePath) => ipcRenderer.invoke('convert-photo', filePath),
   getSamplePhotos: () => ipcRenderer.invoke('get-sample-photos'),
   checkGalleryUrl: (url) => ipcRenderer.invoke('check-gallery-url', url),
-  transferPhotos: (host, photos, transferMode) => ipcRenderer.invoke('transfer-photos-ssh', { host, photos, transferMode }),
-  testSSHConnection: (host) => ipcRenderer.invoke('test-ssh-connection', { host }),
+  transferPhotos: (host, photos, transferMode, galleryUrl, password) => ipcRenderer.invoke('transfer-photos-ssh', { host, photos, transferMode, galleryUrl, password }),
+  testSSHConnection: (host, password) => ipcRenderer.invoke('test-ssh-connection', { host, password }),
+  changePassword: (host, oldPassword, newPassword) => ipcRenderer.invoke('change-password', { host, oldPassword, newPassword }),
   onInstallationProgress: (callback) => {
     ipcRenderer.on('installation-progress', (event, progress) => callback(progress));
   },

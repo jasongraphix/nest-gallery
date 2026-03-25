@@ -1,7 +1,7 @@
 const { Client } = require('ssh2');
 
 const SSH_USER = 'root';
-const SSH_PASSWORD = 'nolongerevil';
+const SSH_BOOTSTRAP_PASSWORD = 'nolongerevil';
 const SSH_PORT = 22;
 const PHOTO_DIR = '/media/scratch/nle-photos';
 const MAX_RETRIES = 5;
@@ -11,7 +11,7 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function sshConnect(host) {
+function sshConnect(host, password = SSH_BOOTSTRAP_PASSWORD) {
   return new Promise((resolve, reject) => {
     const conn = new Client();
     conn.on('ready', () => resolve(conn));
@@ -20,7 +20,7 @@ function sshConnect(host) {
       host,
       port: SSH_PORT,
       username: SSH_USER,
-      password: SSH_PASSWORD,
+      password,
       readyTimeout: 20000,
       keepaliveInterval: 5000,
       keepaliveCountMax: 6,
@@ -135,7 +135,7 @@ function sshWriteFile(conn, remotePath, buffer) {
  * Transfer photos to device over SSH.
  * Freezes nlclient to keep WiFi alive during transfer.
  */
-async function transferPhotosSSH({ host, photos, transferMode, onProgress }) {
+async function transferPhotosSSH({ host, photos, transferMode, galleryUrl, password, onProgress }) {
   const progress = (stage, percent, message) => {
     if (onProgress) onProgress({ stage, percent, message });
   };
@@ -145,7 +145,7 @@ async function transferPhotosSSH({ host, photos, transferMode, onProgress }) {
   let conn;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      conn = await sshConnect(host);
+      conn = await sshConnect(host, password);
       break;
     } catch (err) {
       if (attempt === MAX_RETRIES) {
@@ -167,6 +167,12 @@ async function transferPhotosSSH({ host, photos, transferMode, onProgress }) {
     // Ensure photo directory exists
     progress('ssh-preparing', 5, 'Preparing device storage...');
     await sshExec(conn, `mkdir -p ${PHOTO_DIR}`);
+
+    // Write gallery URL config — always write so clearing the URL takes effect
+    if (galleryUrl !== null && galleryUrl !== undefined) {
+      const configContent = `GALLERY_URL="${galleryUrl}"\n`;
+      await sshWriteFile(conn, '/etc/nle-gallery.conf', Buffer.from(configContent, 'utf-8'));
+    }
 
     // In add mode, find the next available number. In replace mode, write to a
     // staging dir first so existing photos are preserved if transfer fails.
@@ -238,9 +244,20 @@ async function transferPhotosSSH({ host, photos, transferMode, onProgress }) {
 /**
  * Test SSH connection to device.
  */
-async function testSSHConnection(host) {
+async function changePassword(host, oldPassword, newPassword) {
   try {
-    const conn = await sshConnect(host);
+    const conn = await sshConnect(host, oldPassword);
+    await sshExec(conn, `printf '%s\n%s\n' '${newPassword}' '${newPassword}' | passwd root`);
+    conn.end();
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function testSSHConnection(host, password) {
+  try {
+    const conn = await sshConnect(host, password);
     const result = await sshExec(conn, 'echo ok');
     if (result.stdout !== 'ok') {
       conn.end();
@@ -256,4 +273,4 @@ async function testSSHConnection(host) {
   }
 }
 
-module.exports = { transferPhotosSSH, testSSHConnection };
+module.exports = { transferPhotosSSH, testSSHConnection, changePassword };

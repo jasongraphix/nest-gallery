@@ -9,7 +9,7 @@ const STAGES = {
   SSH_COMPLETE: 'ssh-complete',
 };
 
-function PhotoTransfer({ deviceIP, galleryConfig, onSuccess, onError, onBack }) {
+function PhotoTransfer({ deviceIP, devicePassword, galleryConfig, onSuccess, onError, onBack }) {
   const [stage, setStage] = useState(STAGES.CONVERTING);
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState('Preparing photos...');
@@ -69,7 +69,7 @@ function PhotoTransfer({ deviceIP, galleryConfig, onSuccess, onError, onBack }) 
       }
 
       // Transfer via SSH
-      const result = await window.electronAPI.transferPhotos(deviceIP, photos, galleryConfig.transferMode || 'replace');
+      const result = await window.electronAPI.transferPhotos(deviceIP, photos, galleryConfig.transferMode || 'replace', galleryConfig.galleryUrl || '', devicePassword);
 
       if (result.success) {
         setStage(STAGES.SSH_COMPLETE);
