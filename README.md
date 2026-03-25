@@ -82,7 +82,6 @@ npm run package:linux   # Linux
 
 | Flag | Description |
 |------|-------------|
-| `--generation gen1\|gen2\|both` | Target device generation (default: gen2) |
 | `--force-build` | Force kernel rebuild even if cached |
 | `--debug-pause` | Pause after initramfs extraction for manual editing |
 
