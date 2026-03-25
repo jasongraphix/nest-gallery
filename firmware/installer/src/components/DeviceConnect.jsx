@@ -151,7 +151,7 @@ function DeviceConnect({ onNext, onBack, mode, generatedPassword }) {
             <ul className="space-y-2 text-sm text-slate-400">
               <li className="flex gap-2">
                 <span className="text-slate-500">1.</span>
-                You can find it in Settings > Technical Info > Network on your Nest, or check your router's admin page for connected devices (look for "Nest")
+                You can find it in Settings &gt; Technical Info &gt; Network on your Nest, or check your router's admin page for connected devices (look for "Nest")
               </li>
               <li className="flex gap-2">
                 <span className="text-slate-500">2.</span>
