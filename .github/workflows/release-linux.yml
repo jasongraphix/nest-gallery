@@ -1,0 +1,50 @@
+name: Build Linux Installer
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libusb-1.0-0-dev libudev-dev pkg-config build-essential
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: firmware/installer/package-lock.json
+
+      - name: Install dependencies
+        working-directory: firmware/installer
+        run: npm install
+
+      - name: Build and package
+        working-directory: firmware/installer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --linux AppImage --publish onTag
+
+      - name: Rename artifact
+        run: |
+          cd firmware/installer/dist
+          for f in *.AppImage; do
+            mv "$f" "nest-gallery-installer-linux-x64.AppImage"
+          done
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: firmware/installer/dist/nest-gallery-installer-linux-x64.AppImage
