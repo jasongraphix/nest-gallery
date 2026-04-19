@@ -38,9 +38,10 @@ function DeviceConnect({ onNext, onBack, mode, generatedPassword }) {
     try {
       let result;
       let passwordToTry;
-      for (const pwd of passwordsToTry) {
-        result = await window.electronAPI.testSSHConnection(trimmed, pwd);
-        if (result.success) { passwordToTry = pwd; break; }
+      for (let i = 0; i < passwordsToTry.length; i++) {
+        if (i > 0) await new Promise(r => setTimeout(r, 3000));
+        result = await window.electronAPI.testSSHConnection(trimmed, passwordsToTry[i]);
+        if (result.success) { passwordToTry = passwordsToTry[i]; break; }
       }
       if (result.success) {
         localStorage.setItem('nle-last-ip', trimmed);
