@@ -31,7 +31,11 @@ jobs:
         working-directory: firmware/installer
         run: npm install
 
-      - name: Build and package
+      - name: Build frontend
+        working-directory: firmware/installer
+        run: npm run build
+
+      - name: Package AppImage
         working-directory: firmware/installer
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -39,7 +43,7 @@ jobs:
 
       - name: Rename artifact
         run: |
-          cd firmware/installer/dist
+          cd firmware/installer/release
           for f in *.AppImage; do
             mv "$f" "nest-gallery-installer-linux-x64.AppImage"
           done
@@ -47,4 +51,4 @@ jobs:
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: firmware/installer/dist/nest-gallery-installer-linux-x64.AppImage
+          files: firmware/installer/release/nest-gallery-installer-linux-x64.AppImage

@@ -23,7 +23,7 @@
     "appId": "com.nolongerevil.nestgallery",
     "productName": "Nest Gallery Installer",
     "directories": {
-      "output": "dist"
+      "output": "release"
     },
     "files": [
       "electron/**/*",

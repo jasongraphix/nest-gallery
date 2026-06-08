@@ -80,6 +80,7 @@ firmware_build.log
 # Electron build artifacts
 out/
 dist/
+release/
 .webpack/
 make/
 
